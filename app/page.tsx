@@ -24,10 +24,10 @@ const getHighResImageUrl = (file: any) => {
 
 export default function Page() {
   const { data: session, status } = useSession();
+  
+  // 🔥 이 변수들이 아까 빠져있어서 Vercel이 에러를 냈던 겁니다. 완벽 복구했습니다!
   const = useState<any[]>([]);
   const = useState(true);
-  
-  // 🔥 이 변수들이 아까 통째로 날아가서 클릭이 안 됐던 겁니다!
   const = useState<any>(null);
 
   useEffect(() => {
@@ -97,7 +97,7 @@ export default function Page() {
                     onClick={() => setSelectedFile(file)}
                   >
                     {file.mimeType.includes('video') ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg- text-white relative">
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-900 text-white relative">
                         <span className="text-2xl mb-1">▶️</span>
                         <span className="text- bg-black/50 px-1.5 py-0.5 rounded">비디오</span>
                       </div>
