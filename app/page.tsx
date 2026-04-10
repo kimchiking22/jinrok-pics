@@ -1,17 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { signOut } from 'next-auth/react'; // 로그아웃 기능
+import { useSession, signIn, signOut } from 'next-auth/react';
 
-// 1. 사진을 날짜별로 묶어주는 정리 함수 (아이폰 갤러리처럼)
+// 날짜별 정리 함수
 const groupByDate = (files: any[]) => {
   return files.reduce((groups: any, file: any) => {
-    // 날짜 정보가 없으면 건너뜀
     if (!file.createdTime) return groups;
-    
-    // 2026-04-10 형태로 날짜만 딱 잘라냄
-    const dateStr = file.createdTime.split('T')[0]; 
-    
+    const dateStr = file.createdTime.split('T')[0];
     if (!groups[dateStr]) {
       groups[dateStr] = [];
     }
@@ -21,80 +17,110 @@ const groupByDate = (files: any[]) => {
 };
 
 export default function Page() {
+  const { data: session, status } = useSession(); // 로그인 상태 확인
   const [files, setFiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedFile, setSelectedFile] = useState<any>(null); // 확대할 사진/영상 저장
+  const [selectedFile, setSelectedFile] = useState<any>(null);
 
-  // 2. 구글 드라이브에서 사진과 영상 가져오기
+  // 구글 드라이브 파일 불러오기
   useEffect(() => {
-    const fetchFiles = async () => {
-      try {
-        const res = await fetch('/api/drive');
-        const data = await res.json();
-        if (data.files) {
-          setFiles(data.files);
+    if (status === 'authenticated') {
+      const fetchFiles = async () => {
+        try {
+          const res = await fetch('/api/drive');
+          const data = await res.json();
+          if (data.files) {
+            setFiles(data.files);
+          }
+        } catch (error) {
+          console.error('파일 로드 실패:', error);
+        } finally {
+          setLoading(false);
         }
-      } catch (error) {
-        console.error('파일을 불러오는데 실패했습니다:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+      };
+      fetchFiles();
+    }
+  }, [status]);
 
-    fetchFiles();
-  }, []);
+  // 구글 드라이브 이미지 직접 표시용 URL 변환 함수
+  const getImageUrl = (fileId: string) => `https://drive.google.com/uc?export=view&id=${fileId}`;
 
-  // 3. 가져온 사진을 날짜별로 그룹화하고 최신순으로 정렬
+  // 1. 로딩 화면
+  if (status === 'loading') {
+    return <div className="min-h-screen flex items-center justify-center bg-gray-50">로딩중...</div>;
+  }
+
+  // 2. 로그인 화면 (로그인이 안 되어 있을 때)
+  if (status === 'unauthenticated') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F5F5F7]">
+        <h1 className="text-3xl font-semibold mb-8 tracking-tight text-gray-900">Jinrok Photos</h1>
+        <button
+          onClick={() => signIn('kakao')}
+          className="bg-[#FEE500] text-[#000000] font-bold py-3 px-8 rounded-full shadow-sm hover:shadow-md transition-all flex items-center gap-2"
+        >
+          <svg className="w-6 h-6" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 3c-5.52 0-10 3.58-10 8 0 2.86 1.83 5.37 4.54 6.88l-1.15 4.22c-.1.35.31.63.6.43l4.89-3.23c.36.03.73.06 1.12.06 5.52 0 10-3.58 10-8s-4.48-8-10-8z"/>
+          </svg>
+          카카오로 시작하기
+        </button>
+      </div>
+    );
+  }
+
+  // 3. 갤러리 화면 (로그인 완료 시)
   const groupedFiles = groupByDate(files);
   const sortedDates = Object.keys(groupedFiles).sort().reverse();
 
   return (
-    <div className="min-h-screen bg-white pb-10">
-      {/* 상단 헤더 */}
-      <header className="bg-white p-4 flex justify-between items-center sticky top-0 z-10 border-b">
-        <h1 className="text-xl font-bold">사진첩</h1>
-        <button 
-          onClick={() => signOut()} 
-          className="text-sm text-blue-500 hover:text-blue-700 font-semibold"
-        >
-          로그아웃
-        </button>
+    <div className="min-h-screen bg-white pb-20">
+      {/* 아이클라우드 스타일 헤더 */}
+      <header className="bg-white/80 backdrop-blur-md sticky top-0 z-10 border-b border-gray-200 px-4 py-3 flex justify-between items-center">
+        <h1 className="text-xl font-semibold tracking-tight">사진첩</h1>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-gray-500 font-medium">{session?.user?.name}님</span>
+          <button 
+            onClick={() => signOut()} 
+            className="text-sm text-blue-500 hover:text-blue-600 font-medium"
+          >
+            로그아웃
+          </button>
+        </div>
       </header>
 
-      {/* 메인 갤러리 영역 */}
-      <main className="max-w-4xl mx-auto p-4">
+      {/* 메인 갤러리 */}
+      <main className="max-w-5xl mx-auto pt-6">
         {loading ? (
-          <div className="text-center py-20 text-gray-500">사진을 불러오는 중입니다...</div>
+          <div className="text-center py-20 text-gray-400">사진을 동기화하는 중입니다...</div>
         ) : sortedDates.length === 0 ? (
-          <div className="text-center py-20 text-gray-500">사진이 없습니다.</div>
+          <div className="text-center py-20 text-gray-400">표시할 사진이 없습니다.</div>
         ) : (
           sortedDates.map(date => (
             <div key={date} className="mb-8">
-              {/* 날짜 제목 (예: 2026-04-10) */}
-              <h2 className="text-lg font-bold mb-3 pl-1">{date}</h2>
+              {/* 날짜 텍스트 */}
+              <h2 className="text-base font-semibold mb-2 px-4 text-gray-900">{date}</h2>
               
-              {/* 사진/영상 바둑판(그리드) 배열 */}
-              <div className="grid grid-cols-3 gap-1">
+              {/* 아이폰 스타일 딱 붙는 틈(gap) 그리드 */}
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-[2px]">
                 {groupedFiles[date].map((file: any) => (
                   <div 
                     key={file.id} 
                     className="aspect-square relative cursor-pointer bg-gray-100 overflow-hidden"
-                    onClick={() => setSelectedFile(file)} // 클릭 시 모달창 열림
+                    onClick={() => setSelectedFile(file)}
                   >
                     {file.mimeType.includes('video') ? (
-                      // 영상일 경우 표시되는 모양
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-200">
-                        <span className="text-2xl mb-1">▶️</span>
-                        <span className="text-xs text-gray-500 truncate px-2 w-full text-center">
-                          {file.name}
-                        </span>
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-800 text-white relative">
+                        <svg className="w-8 h-8 opacity-80" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                        </svg>
+                        <span className="absolute bottom-1 right-1 text-[10px] bg-black/50 px-1 rounded">비디오</span>
                       </div>
                     ) : (
-                      // 사진일 경우 표시되는 모양
                       <img 
-                        src={file.webContentLink} 
+                        // 🔥 엑스박스 해결: 구글 직접 보기 링크 적용
+                        src={getImageUrl(file.id)} 
                         alt={file.name} 
-                        className="w-full h-full object-cover hover:opacity-80 transition-opacity" 
+                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105" 
                       />
                     )}
                   </div>
@@ -105,37 +131,34 @@ export default function Page() {
         )}
       </main>
 
-      {/* 4. 사진 확대 & 영상 재생 팝업 (모달) */}
+      {/* 모달 (확대 화면) */}
       {selectedFile && (
         <div 
-          className="fixed inset-0 bg-black flex items-center justify-center z-50"
-          onClick={() => setSelectedFile(null)} // 검은 배경 누르면 닫힘
+          className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity"
+          onClick={() => setSelectedFile(null)}
         >
-          {/* 닫기 버튼 (우측 상단) */}
           <button 
-            className="absolute top-4 right-4 text-white text-3xl font-light z-50 p-2"
+            className="absolute top-6 right-6 text-white/70 hover:text-white text-4xl font-light z-50 p-2"
             onClick={() => setSelectedFile(null)}
           >
             &times;
           </button>
 
-          <div className="w-full h-full flex items-center justify-center p-4">
+          <div className="w-full h-full flex items-center justify-center p-4 sm:p-12">
             {selectedFile.mimeType.includes('video') ? (
-              // 영상 플레이어
               <video 
                 src={selectedFile.webContentLink} 
                 controls 
                 autoPlay 
-                className="max-h-full max-w-full outline-none"
-                onClick={(e) => e.stopPropagation()} // 영상 영역 클릭 시 닫힘 방지
+                className="max-h-full max-w-full rounded-md shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
               />
             ) : (
-              // 확대된 사진
               <img 
-                src={selectedFile.webContentLink} 
+                src={getImageUrl(selectedFile.id)} 
                 alt={selectedFile.name}
-                className="max-h-full max-w-full object-contain"
-                onClick={(e) => e.stopPropagation()} // 사진 영역 클릭 시 닫힘 방지
+                className="max-h-full max-w-full object-contain rounded-sm shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
               />
             )}
           </div>
