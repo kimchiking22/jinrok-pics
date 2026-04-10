@@ -3,8 +3,13 @@ import { google } from 'googleapis';
 
 export async function GET() {
   try {
-    // 파일 대신 환경 변수에서 열쇠 정보를 직접 읽어옵니다.
-    const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS || '{}');
+    // 1. 환경변수가 비어있는지 먼저 확인 (빌드 시 에러 방지)
+    const credentialsVar = process.env.GOOGLE_CREDENTIALS;
+    if (!credentialsVar) {
+      return NextResponse.json({ error: '인증 정보가 없습니다.' }, { status: 500 });
+    }
+
+    const credentials = JSON.parse(credentialsVar);
 
     const auth = new google.auth.GoogleAuth({
       credentials,
@@ -19,10 +24,10 @@ export async function GET() {
       fields: 'files(id, name, webContentLink, mimeType)',
     });
 
-    return NextResponse.json({ files: response.data.files });
+    return NextResponse.json({ files: response.data.files || [] });
     
-  } catch (error) {
+  } catch (error: any) {
     console.error('Google Drive API Error:', error);
-    return NextResponse.json({ error: '사진을 가져오지 못했습니다.' }, { status: 500 });
+    return NextResponse.json({ error: error.message || '사진을 가져오지 못했습니다.' }, { status: 500 });
   }
 }
