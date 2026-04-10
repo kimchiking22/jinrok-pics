@@ -23,10 +23,12 @@ export async function GET() {
     const drive = google.drive({ version: 'v3', auth });
     const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
 
-    const response = await drive.files.list({
-      q: `'${folderId}' in parents and trashed = false`,
-      fields: 'files(id, name, webContentLink, mimeType)',
-    });
+    // app/api/drive/route.ts 파일의 일부
+const response = await drive.files.list({
+  q: `'${folderId}' in parents and trashed = false`,
+  // 🌟 여기에 createdTime이 반드시 포함되어야 합니다!
+  fields: 'files(id, name, webContentLink, mimeType, createdTime)', 
+});
 
     return NextResponse.json({ files: response.data.files || [] });
     
