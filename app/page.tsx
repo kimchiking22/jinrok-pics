@@ -25,7 +25,7 @@ const getHighResImageUrl = (file: any) => {
 export default function Page() {
   const { data: session, status } = useSession();
   
-  // 🔥 이 변수들이 아까 빠져있어서 Vercel이 에러를 냈던 겁니다. 완벽 복구했습니다!
+  // 🔥 잘려나갔던 변수명 완벽 복구
   const = useState<any[]>([]);
   const = useState(true);
   const = useState<any>(null);
@@ -47,7 +47,7 @@ export default function Page() {
       };
       fetchFiles();
     }
-  },);
+  },); // 🔥 잘려나갔던 괄호 복구
 
   if (status === 'loading') {
     return <div className="min-h-screen flex items-center justify-center bg-">연결 중...</div>;
