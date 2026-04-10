@@ -3,11 +3,11 @@ import { google } from 'googleapis';
 
 export async function GET() {
   try {
-    // 1. Vercel 환경변수에 넣은 구글 열쇠 가져오기
+    // 파일 대신 환경 변수에서 열쇠 정보를 직접 읽어옵니다.
     const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS || '{}');
 
     const auth = new google.auth.GoogleAuth({
-      credentials, // 파일 대신 변수 내용을 직접 사용
+      credentials,
       scopes: ['https://www.googleapis.com/auth/drive.readonly'],
     });
 
