@@ -104,7 +104,8 @@ export default function Page() {
                     ) : (
                       <img 
                         src={getImageUrl(file.id)} 
-                        alt={file.name} 
+                        alt={file.name}
+                        referrerPolicy="no-referrer"
                         className="w-full h-full object-cover transition-opacity hover:opacity-90"
                         onError={(e) => {
                           // 사진이 안 뜰 경우 대체 텍스트 표시
@@ -140,6 +141,7 @@ export default function Page() {
               <img 
                 src={getImageUrl(selectedFile.id)} 
                 alt={selectedFile.name}
+                referrerPolicy="no-referrer"
                 className="max-h-[90vh] max-w-full object-contain shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
               />
