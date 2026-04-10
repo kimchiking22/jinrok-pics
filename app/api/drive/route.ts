@@ -9,8 +9,6 @@ export async function GET() {
     }
 
     const credentials = JSON.parse(credentialsVar);
-
-    // 🔥 핵심 수정 사항: Vercel이 망가뜨린 줄바꿈 기호(\\n)를 정상적인 엔터(\n)로 강제 복구합니다.
     if (credentials.private_key) {
       credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
     }
@@ -23,12 +21,11 @@ export async function GET() {
     const drive = google.drive({ version: 'v3', auth });
     const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
 
-    // app/api/drive/route.ts 파일의 일부
-const response = await drive.files.list({
-  q: `'${folderId}' in parents and trashed = false`,
-  // 🌟 여기에 createdTime이 반드시 포함되어야 합니다!
-  fields: 'files(id, name, webContentLink, mimeType, createdTime)', 
-});
+    const response = await drive.files.list({
+      q: `'${folderId}' in parents and trashed = false`,
+      // 🔥 핵심 수정: 맨 끝에 thumbnailLink를 추가했습니다!
+      fields: 'files(id, name, webContentLink, mimeType, createdTime, thumbnailLink)',
+    });
 
     return NextResponse.json({ files: response.data.files || [] });
     
