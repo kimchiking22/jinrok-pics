@@ -3,23 +3,20 @@
 import { useState, useEffect } from 'react';
 import { useSession, signIn, signOut } from 'next-auth/react';
 
-// 날짜별 정리 함수
 const groupByDate = (files: any[]) => {
   return files.reduce((groups: any, file: any) => {
     if (!file.createdTime) return groups;
-    const dateStr = file.createdTime.split('T')[0];
-    if (!groups[dateStr]) {
-      groups[dateStr] = [];
+    const dateStr = file.createdTime.split('T');
+    if (!groups) {
+      groups = [];
     }
-    groups[dateStr].push(file);
+    groups.push(file);
     return groups;
   }, {});
 };
 
-// 구글 보안을 우회해서 고화질 이미지를 가져오는 함수
-const getImageUrl = (file: any) => {
+const getHighResImageUrl = (file: any) => {
   if (file.thumbnailLink) {
-    // 썸네일 주소를 원본 화질(=s0)로 변경
     return file.thumbnailLink.replace(/=s\d+$/, '=s0');
   }
   return ''; 
@@ -27,8 +24,11 @@ const getImageUrl = (file: any) => {
 
 export default function Page() {
   const { data: session, status } = useSession();
-  const [files, setFiles] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const = useState<any[]>([]);
+  const = useState(true);
+  
+  // 🔥 이 변수들이 아까 통째로 날아가서 클릭이 안 됐던 겁니다!
+  const = useState<any>(null);
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -47,18 +47,19 @@ export default function Page() {
       };
       fetchFiles();
     }
-  }, [status]);
+  },);
 
-  // 로그인 체크
-  if (status === 'loading') return <div className="min-h-screen flex items-center justify-center">연결 중...</div>;
+  if (status === 'loading') {
+    return <div className="min-h-screen flex items-center justify-center bg-">연결 중...</div>;
+  }
 
   if (status === 'unauthenticated') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#F5F5F7]">
-        <h1 className="text-3xl font-semibold mb-8 text-gray-900">우리가족 사진첩</h1>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-">
+        <h1 className="text-3xl font-semibold mb-8 tracking-tight text-gray-900">우리가족 사진첩</h1>
         <button
           onClick={() => signIn('kakao')}
-          className="bg-[#FEE500] text-black font-bold py-3 px-8 rounded-full shadow-sm"
+          className="bg- text-black font-bold py-3 px-8 rounded-full shadow-sm hover:shadow-md transition-all"
         >
           카카오로 시작하기
         </button>
@@ -70,39 +71,42 @@ export default function Page() {
   const sortedDates = Object.keys(groupedFiles).sort().reverse();
 
   return (
-    <div className="min-h-screen bg-white pb-10">
-      <header className="bg-white/90 backdrop-blur-md sticky top-0 z-10 border-b p-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold">사진첩</h1>
+    <div className="min-h-screen bg-white pb-20">
+      <header className="bg-white/90 backdrop-blur-md sticky top-0 z-10 border-b border-gray-200 px-4 py-3 flex justify-between items-center">
+        <h1 className="text-xl font-semibold tracking-tight">사진첩</h1>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-500">{session?.user?.name}님</span>
+          <span className="text-sm text-gray-500 font-medium">{session?.user?.name}님</span>
           <button onClick={() => signOut()} className="text-sm text-blue-500 font-medium">로그아웃</button>
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto pt-6 px-[1px]">
+      <main className="max-w-5xl mx-auto pt-6 px-">
         {loading ? (
-          <div className="text-center py-20 text-gray-400">사진을 불러오고 있습니다...</div>
+          <div className="text-center py-20 text-gray-400">사진을 가져오고 있습니다...</div>
         ) : sortedDates.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">사진이 없습니다.</div>
+          <div className="text-center py-20 text-gray-400">표시할 사진이 없습니다.</div>
         ) : (
           sortedDates.map(date => (
             <div key={date} className="mb-8">
               <h2 className="text-base font-semibold mb-2 px-4 text-gray-900">{date}</h2>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-[2px]">
-                {groupedFiles[date].map((file: any) => (
-                  <div key={file.id} className="aspect-square relative bg-gray-100 overflow-hidden">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-">
+                {groupedFiles.map((file: any) => (
+                  <div 
+                    key={file.id} 
+                    className="aspect-square relative cursor-pointer bg-gray-100 overflow-hidden"
+                    onClick={() => setSelectedFile(file)}
+                  >
                     {file.mimeType.includes('video') ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-800 text-white">
-                        <span className="text-xl">▶️</span>
-                        <span className="text-[10px] mt-1">동영상</span>
+                      <div className="w-full h-full flex flex-col items-center justify-center bg- text-white relative">
+                        <span className="text-2xl mb-1">▶️</span>
+                        <span className="text- bg-black/50 px-1.5 py-0.5 rounded">비디오</span>
                       </div>
                     ) : (
                       <img 
-                        src={getImageUrl(file)} 
+                        src={getHighResImageUrl(file)} 
                         alt={file.name} 
-                        // 🔥 중요: 구글 보안 차단을 뚫기 위한 옵션
                         referrerPolicy="no-referrer"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
                       />
                     )}
                   </div>
@@ -112,6 +116,43 @@ export default function Page() {
           ))
         )}
       </main>
+
+      {/* 팝업 모달 창 */}
+      {selectedFile && (
+        <div 
+          className="fixed inset-0 bg-black/95 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity"
+          onClick={() => setSelectedFile(null)}
+        >
+          <button 
+            className="absolute top-6 right-6 text-white/70 hover:text-white text-4xl font-light z-50 p-2"
+            onClick={() => setSelectedFile(null)}
+          >
+            &times;
+          </button>
+
+          <div className="w-full h-full flex items-center justify-center sm:p-12">
+            {selectedFile.mimeType.includes('video') ? (
+              <video 
+                src={`https://drive.google.com/videoplayback?id=${selectedFile.id}`} 
+                controls 
+                autoPlay 
+                playsInline 
+                preload="metadata"
+                className="max-h- max-w-full rounded-md shadow-2xl outline-none bg-black"
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <img 
+                src={getHighResImageUrl(selectedFile)} 
+                alt={selectedFile.name}
+                referrerPolicy="no-referrer"
+                className="max-h- max-w-full object-contain rounded-sm shadow-2xl"
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
