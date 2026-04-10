@@ -3,13 +3,17 @@ import { google } from 'googleapis';
 
 export async function GET() {
   try {
-    // 1. 환경변수가 비어있는지 먼저 확인 (빌드 시 에러 방지)
     const credentialsVar = process.env.GOOGLE_CREDENTIALS;
     if (!credentialsVar) {
       return NextResponse.json({ error: '인증 정보가 없습니다.' }, { status: 500 });
     }
 
     const credentials = JSON.parse(credentialsVar);
+
+    // 🔥 핵심 수정 사항: Vercel이 망가뜨린 줄바꿈 기호(\\n)를 정상적인 엔터(\n)로 강제 복구합니다.
+    if (credentials.private_key) {
+      credentials.private_key = credentials.private_key.replace(/\\n/g, '\n');
+    }
 
     const auth = new google.auth.GoogleAuth({
       credentials,
