@@ -16,6 +16,8 @@ const groupByDate = (files: any[]) => {
   }, {});
 };
 
+const getImageUrl = (fileId: string) => `https://drive.google.com/uc?export=view&id=${fileId}`;
+  
 export default function Page() {
   const { data: session, status } = useSession(); // 로그인 상태 확인
   const [files, setFiles] = useState<any[]>([]);
@@ -103,19 +105,28 @@ export default function Page() {
               {/* 아이폰 스타일 딱 붙는 틈(gap) 그리드 */}
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-[2px]">
                 {groupedFiles[date].map((file: any) => (
-                  <div 
-                    key={file.id} 
-                    className="aspect-square relative cursor-pointer bg-gray-100 overflow-hidden"
-                    onClick={() => setSelectedFile(file)}
-                  >
-                    {file.mimeType.includes('video') ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center bg-gray-800 text-white relative">
-                        <svg className="w-8 h-8 opacity-80" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                        </svg>
-                        <span className="absolute bottom-1 right-1 text-[10px] bg-black/50 px-1 rounded">비디오</span>
-                      </div>
-                    ) : (
+              <div 
+                key={file.id} 
+                className="aspect-square relative cursor-pointer"
+                onClick={() => setSelectedFile(file)}
+              >
+                {file.mimeType.includes('video') ? (
+                  // 비디오 아이콘 표시 부분
+                  <div className="w-full h-full bg-black flex items-center justify-center">
+                    <span className="text-white text-xs">영상</span>
+                  </div>
+                ) : (
+                  // 🌟 사진 표시 부분 수정 🌟
+                  // 기존: <img src={file.webContentLink} ... />
+                  // 🔥 변경: 위에서 만든 getImageUrl 함수를 사용합니다.
+                  <img 
+                    src={getImageUrl(file.id)} 
+                    alt={file.name} 
+                    className="w-full h-full object-cover rounded" 
+                  />
+                )}
+              </div>
+            ))}
                       <img 
                         // 🔥 엑스박스 해결: 구글 직접 보기 링크 적용
                         src={getImageUrl(file.id)} 
